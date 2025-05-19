@@ -79,6 +79,8 @@ app.post("/api/send-verification", async (req, res) => {
   },
 });
 
+console.log("Transporter config:", transporter.options);
+
     await transporter.sendMail({
       from: `"Grievance Portal" <${process.env.EMAIL}>`,
       to: partnerEmail,
