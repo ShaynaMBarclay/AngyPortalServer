@@ -78,6 +78,7 @@ app.post("/api/send-verification", async (req, res) => {
   auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASSWORD,
+        method: "LOGIN",
       },
       logger: true,
       debug: true,
