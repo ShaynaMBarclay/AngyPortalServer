@@ -5,8 +5,7 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-
+const serviceAccount = require("./firebase/angyportal-d6065-firebase-adminsdk-fbsvc-154c55e36c.json"); // <-- Update this path
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -15,28 +14,12 @@ admin.initializeApp({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const allowedOrigins = ["http://localhost:5173"];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman or server-to-server)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `CORS policy: origin ${origin} not allowed`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+// Enable CORS for frontend origin
+app.use(cors({
+  origin: "http://localhost:5173",
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-// Use CORS middleware with the options
-app.use(cors(corsOptions));
-
-// Explicitly respond to OPTIONS preflight requests
-app.options("*", cors(corsOptions));
+}));
+app.use(bodyParser.json());
 
 // ===== In-Memory Stores =====
 const verifiedTokens = new Set(); // For one-time use tokens
@@ -132,8 +115,6 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
   },
-   debug: true,
-  logger: true,
 });
 
 console.log("Sending grievance email with transporter:", transporter.options);
