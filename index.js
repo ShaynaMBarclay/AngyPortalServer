@@ -5,7 +5,7 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
-const serviceAccount = require("./firebase/angyportal-d6065-firebase-adminsdk-fbsvc-154c55e36c.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
