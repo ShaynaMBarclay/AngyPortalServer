@@ -101,14 +101,41 @@ app.get("/api/is-verified", authenticateFirebaseToken, (req, res) => {
 });
 
 // ===== Submit Grievance (Protected) =====
-app.post("/api/send-grievance", authenticateFirebaseToken, (req, res) => {
+app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
   const { partnerEmail, grievance } = req.body;
+
   if (!verifiedEmails.has(partnerEmail)) {
     return res.status(403).json({ error: "Partner email not verified." });
   }
 
-  console.log(`Grievance submitted for ${partnerEmail}: ${grievance}`);
-  res.status(200).json({ message: "Grievance received." });
+  try {
+   const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+   debug: true,
+  logger: true,
+});
+
+console.log("Sending grievance email with transporter:", transporter.options);
+console.log("To:", partnerEmail);
+console.log("Grievance text:", grievance);
+
+    await transporter.sendMail({
+      from: `"Grievance Portal" <${process.env.EMAIL}>`,
+      to: partnerEmail,
+      subject: "New Grievance Submitted",
+      text: grievance,
+    });
+
+    console.log(`Grievance email sent to ${partnerEmail}: ${grievance}`);
+    res.status(200).json({ message: "Grievance sent via email." });
+  } catch (err) {
+    console.error("Error sending grievance email:", err);
+    res.status(500).json({ error: "Failed to send grievance email." });
+  }
 });
 
 // ===== Protected Example Route =====
