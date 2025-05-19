@@ -146,6 +146,11 @@ app.get("/api/protected", authenticateFirebaseToken, (req, res) => {
   res.json({ message: "You are authorized", user: req.user });
 });
 
+// ===== Health Check Route for Render =====
+app.get("/healthz", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // ===== Start Server =====
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
