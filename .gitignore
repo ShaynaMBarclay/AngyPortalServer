@@ -1,0 +1,5 @@
+node_modules/
+.env
+
+# Ignore Firebase Admin SDK service account keys (any JSON files inside firebase/)
+firebase/*.json
