@@ -71,13 +71,14 @@ app.post("/api/send-verification", async (req, res) => {
   console.log("Verification link:", verificationLink);
 
   try {
-    const transporter = nodemailer.createTransport({
-  service: "gmail", 
+  const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
   },
-  authMethod: "LOGIN",
 });
 
 console.log("Transporter config:", transporter.options);
@@ -126,13 +127,14 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-      authMethod: "LOGIN",
+   const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
+  },
     });
 
     console.log("Sending grievance email to:", partnerEmail);
