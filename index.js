@@ -57,6 +57,9 @@ app.post("/api/send-verification", async (req, res) => {
 
   console.log("Sending verification to partnerEmail:", partnerEmail);
 
+  console.log("EMAIL env var:", process.env.EMAIL);
+  console.log("EMAIL_PASSWORD env var is set?", !!process.env.EMAIL_PASSWORD);
+
   const token = Math.random().toString(36).substring(2, 10);
   verifiedTokens.add(token);
 
