@@ -76,8 +76,8 @@ app.post("/api/send-verification", async (req, res) => {
   port: 465,
   secure: true,
   auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASSWORD,
+        user: "theangyportal@gmail.com",
+        pass: "mpjxvbiwsntboojs",
       },
       logger: true,
       debug: true,
