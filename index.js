@@ -76,8 +76,8 @@ app.post("/api/send-verification", async (req, res) => {
   auth: {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
-    method: 'LOGIN'
   },
+  authMethod: "LOGIN",
 });
 
 console.log("Transporter config:", transporter.options);
@@ -131,8 +131,8 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
       auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASSWORD,
-         method: "LOGIN",
       },
+      authMethod: "LOGIN",
     });
 
     console.log("Sending grievance email to:", partnerEmail);
