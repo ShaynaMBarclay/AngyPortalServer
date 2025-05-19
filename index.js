@@ -71,11 +71,15 @@ app.post("/api/send-verification", async (req, res) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
+      host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASSWORD,
       },
+      logger: true,
+      debug: true,
     });
 
     await transporter.sendMail({
