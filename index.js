@@ -4,6 +4,9 @@ const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
+console.log("EMAIL env var:", process.env.EMAIL);
+console.log("EMAIL_PASSWORD env var is set?", !!process.env.EMAIL_PASSWORD);
+
 const admin = require("firebase-admin");
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
