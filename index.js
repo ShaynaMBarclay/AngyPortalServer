@@ -5,7 +5,7 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
-const serviceAccount = require("./firebase/angyportal-d6065-firebase-adminsdk-fbsvc-154c55e36c.json"); // <-- Update this path
+const serviceAccount = require("./firebase/angyportal-d6065-firebase-adminsdk-fbsvc-154c55e36c.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -14,15 +14,23 @@ admin.initializeApp({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Enable CORS for frontend origin
-app.use(cors({
-  origin: "http://localhost:5173"
-}));
+const corsOptions = {
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Apply CORS middleware to all routes
+app.use(cors(corsOptions));
+
+// Handle preflight OPTIONS requests for all routes
+app.options("*", cors(corsOptions));
+
 app.use(bodyParser.json());
 
 // ===== In-Memory Stores =====
-const verifiedTokens = new Set(); // For one-time use tokens
-const verifiedEmails = new Set(); // Stores verified partner emails
+const verifiedTokens = new Set();
+const verifiedEmails = new Set();
 
 // ===== Middleware: Verify Firebase ID Token =====
 async function authenticateFirebaseToken(req, res, next) {
@@ -35,7 +43,7 @@ async function authenticateFirebaseToken(req, res, next) {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken; // user info: uid, email, etc.
+    req.user = decodedToken;
     next();
   } catch (error) {
     console.error("Firebase token verification failed:", error);
@@ -108,17 +116,15 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
   }
 
   try {
-   const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
 
-console.log("Sending grievance email with transporter:", transporter.options);
-console.log("To:", partnerEmail);
-console.log("Grievance text:", grievance);
+    console.log("Sending grievance email to:", partnerEmail);
 
     await transporter.sendMail({
       from: `"Grievance Portal" <${process.env.EMAIL}>`,
