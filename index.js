@@ -72,10 +72,6 @@ app.post("/api/send-verification", async (req, res) => {
       },
     });
 
-    console.log("EMAIL:", process.env.EMAIL);
-    console.log("EMAIL_PASSWORD present:", !!process.env.EMAIL_PASSWORD);
-
-
     await transporter.sendMail({
       from: `"Grievance Portal" <${process.env.EMAIL}>`,
       to: partnerEmail,
