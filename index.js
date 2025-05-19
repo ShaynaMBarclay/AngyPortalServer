@@ -15,12 +15,28 @@ admin.initializeApp({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Enable CORS for frontend origin
-app.use(cors({
-  origin: "http://localhost:5173",
+const allowedOrigins = ["http://localhost:5173"];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman or server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `CORS policy: origin ${origin} not allowed`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
-}));
-app.use(bodyParser.json());
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Use CORS middleware with the options
+app.use(cors(corsOptions));
+
+// Explicitly respond to OPTIONS preflight requests
+app.options("*", cors(corsOptions));
 
 // ===== In-Memory Stores =====
 const verifiedTokens = new Set(); // For one-time use tokens
