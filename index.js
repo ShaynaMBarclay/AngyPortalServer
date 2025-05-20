@@ -19,7 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "https://angyportal.netlify.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
@@ -67,7 +67,7 @@ app.post("/api/send-verification", async (req, res) => {
   const token = Math.random().toString(36).substring(2, 10);
   verifiedTokens.add(token);
 
-  const verificationLink = `http://localhost:5173/verify?token=${token}&email=${encodeURIComponent(partnerEmail)}`;
+  const verificationLink = `https://angyportal.netlify.app/verify?token=${token}&email=${encodeURIComponent(partnerEmail)}`;
   console.log("Verification link:", verificationLink);
 
   try {
