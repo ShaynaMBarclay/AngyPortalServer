@@ -4,10 +4,6 @@ const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-console.log("EMAIL env var:", process.env.EMAIL);
-console.log("EMAIL_PASSWORD env var is set?", !!process.env.EMAIL_PASSWORD);
-console.log(`EMAIL_PASSWORD env var: "${process.env.EMAIL_PASSWORD}"`);
-
 const admin = require("firebase-admin");
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
@@ -18,28 +14,37 @@ admin.initializeApp({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const corsOptions = {
-    origin: [
+// ===== Firestore Setup =====
+const db = admin.firestore();
+
+// ===== Middleware =====
+app.use(cors({
+  origin: [
     "http://localhost:5173",
     "https://angyportal.netlify.app",
     "https://angyportal.love"
   ],
-
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-// Apply CORS middleware to all routes
-app.use(cors(corsOptions));
-
-// Handle preflight OPTIONS requests for all routes
-app.options("*", cors(corsOptions));
+}));
 
 app.use(bodyParser.json());
+app.options("*", cors()); // For preflight requests
 
 // ===== In-Memory Stores =====
 const verifiedTokens = new Set();
-const verifiedEmails = new Set();
+const verifiedEmails = new Set(); // This was missing but is used later!
+
+// ===== Firestore Helpers =====
+async function isEmailVerified(email) {
+  const doc = await db.collection("verifiedPartners").doc(email).get();
+  return doc.exists;
+}
+
+async function markEmailAsVerified(email) {
+  await db.collection("verifiedPartners").doc(email).set({ verified: true });
+  verifiedEmails.add(email); // Add to in-memory cache
+}
 
 // ===== Middleware: Verify Firebase ID Token =====
 async function authenticateFirebaseToken(req, res, next) {
@@ -60,33 +65,25 @@ async function authenticateFirebaseToken(req, res, next) {
   }
 }
 
-// ===== Send Partner Verification Email =====
+// ===== Route: Send Verification Email =====
 app.post("/api/send-verification", async (req, res) => {
   const { partnerEmail } = req.body;
-
-  console.log("Sending verification to partnerEmail:", partnerEmail);
-
-  console.log("EMAIL env var:", process.env.EMAIL);
-  console.log("EMAIL_PASSWORD env var is set?", !!process.env.EMAIL_PASSWORD);
 
   const token = Math.random().toString(36).substring(2, 10);
   verifiedTokens.add(token);
 
   const verificationLink = `https://angyportal.love/verify?token=${token}&email=${encodeURIComponent(partnerEmail)}`;
-  console.log("Verification link:", verificationLink);
 
   try {
-  const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
-
-console.log("Transporter config:", transporter.options);
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
 
     await transporter.sendMail({
       from: `"Grievance Portal" <${process.env.EMAIL}>`,
@@ -102,47 +99,46 @@ console.log("Transporter config:", transporter.options);
   }
 });
 
-// ===== Verify Token and Save Verified Email =====
-app.get("/api/verify", (req, res) => {
+// ===== Route: Verify Token and Save Email =====
+app.get("/api/verify", async (req, res) => {
   const token = req.query.token;
   const email = req.query.email;
-  console.log("Verify request received:", { token, email });
 
   if (verifiedTokens.has(token)) {
     verifiedTokens.delete(token);
-    verifiedEmails.add(email);
+    await markEmailAsVerified(email);
     return res.status(200).json({ success: true, message: "Partner verified." });
   }
 
   res.status(400).json({ success: false, message: "Invalid or expired token." });
 });
 
-// ===== Check if Partner Email is Verified (Protected) =====
-app.get("/api/is-verified", authenticateFirebaseToken, (req, res) => {
+// ===== Route: Check if Partner Email is Verified =====
+app.get("/api/is-verified", authenticateFirebaseToken, async (req, res) => {
   const email = req.query.email;
-  res.json({ verified: verifiedEmails.has(email) });
+  const verified = await isEmailVerified(email);
+  res.json({ verified });
 });
 
-// ===== Submit Grievance (Protected) =====
+// ===== Route: Submit Grievance =====
 app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
   const { partnerEmail, grievance, senderName } = req.body;
 
-  if (!verifiedEmails.has(partnerEmail)) {
+  const isVerified = await isEmailVerified(partnerEmail);
+  if (!isVerified) {
     return res.status(403).json({ error: "Partner email not verified." });
   }
 
   try {
-   const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
+      },
     });
-
-    console.log("Sending grievance email to:", partnerEmail);
 
     await transporter.sendMail({
       from: `"Grievance Portal" <${process.env.EMAIL}>`,
@@ -151,7 +147,6 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
       text: `From: ${senderName || "Anonymous"}\n\n${grievance}`,
     });
 
-    console.log(`Grievance email sent to ${partnerEmail}: ${grievance}`);
     res.status(200).json({ message: "Grievance sent via email." });
   } catch (err) {
     console.error("Error sending grievance email:", err);
@@ -159,12 +154,12 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
   }
 });
 
-// ===== Protected Example Route =====
+// ===== Route: Protected Test =====
 app.get("/api/protected", authenticateFirebaseToken, (req, res) => {
   res.json({ message: "You are authorized", user: req.user });
 });
 
-// ===== Health Check Route for Render =====
+// ===== Route: Health Check =====
 app.get("/healthz", (req, res) => {
   res.status(200).send("OK");
 });
