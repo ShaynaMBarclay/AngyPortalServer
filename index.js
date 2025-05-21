@@ -29,21 +29,23 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
-app.options("*", cors()); // For preflight requests
+app.options("*", cors()); 
 
 // ===== In-Memory Stores =====
 const verifiedTokens = new Set();
-const verifiedEmails = new Set(); // This was missing but is used later!
+const verifiedEmails = new Set(); 
 
 // ===== Firestore Helpers =====
 async function isEmailVerified(email) {
-  const doc = await db.collection("verifiedPartners").doc(email).get();
+   const lowerEmail = email.toLowerCase();
+  const doc = await db.collection("verifiedPartners").doc(lowerEmail).get();
   return doc.exists;
 }
 
 async function markEmailAsVerified(email) {
   await db.collection("verifiedPartners").doc(email).set({ verified: true });
-  verifiedEmails.add(email); // Add to in-memory cache
+  verifiedEmails.add(lowerEmail);
+  verifiedEmails.add(email); 
 }
 
 // ===== Middleware: Verify Firebase ID Token =====
@@ -72,7 +74,9 @@ app.post("/api/send-verification", async (req, res) => {
   const token = Math.random().toString(36).substring(2, 10);
   verifiedTokens.add(token);
 
-  const verificationLink = `https://angyportal.love/verify?token=${token}&email=${encodeURIComponent(partnerEmail)}`;
+  const normalizedEmail = partnerEmail.toLowerCase();
+
+  const verificationLink = `https://angyportal.love/verify?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
 
   try {
     const transporter = nodemailer.createTransport({
@@ -125,8 +129,9 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
   const { partnerEmail, grievance, senderName, angyLevel } = req.body;
 
    console.log("Received grievance payload:", { partnerEmail, grievance, senderName, angyLevel });
-   
-  const isVerified = await isEmailVerified(partnerEmail);
+
+  const isVerified = await isEmailVerified(partnerEmail.toLowerCase());
+
   if (!isVerified) {
     return res.status(403).json({ error: "Partner email not verified." });
   }
