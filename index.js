@@ -122,8 +122,10 @@ app.get("/api/is-verified", authenticateFirebaseToken, async (req, res) => {
 
 // ===== Route: Submit Grievance =====
 app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
-  const { partnerEmail, grievance, senderName } = req.body;
+  const { partnerEmail, grievance, senderName, angyLevel } = req.body;
 
+   console.log("Received grievance payload:", { partnerEmail, grievance, senderName, angyLevel });
+   
   const isVerified = await isEmailVerified(partnerEmail);
   if (!isVerified) {
     return res.status(403).json({ error: "Partner email not verified." });
@@ -144,7 +146,9 @@ app.post("/api/send-grievance", authenticateFirebaseToken, async (req, res) => {
       from: `"Grievance Portal" <${process.env.EMAIL}>`,
       to: partnerEmail,
       subject: "New Grievance Submitted",
-      text: `From: ${senderName || "Anonymous"}\n\n${grievance}`,
+      text:  `From: ${senderName || "Anonymous"}\n` +
+    `Angy Level: ${angyLevel ?? "Not provided"}\n\n` +
+    `${grievance}`,
     });
 
     res.status(200).json({ message: "Grievance sent via email." });
