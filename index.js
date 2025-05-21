@@ -90,10 +90,10 @@ app.post("/api/send-verification", async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: `"Grievance Portal" <${process.env.EMAIL}>`,
+      from: `"Angy Portal" <${process.env.EMAIL}>`,
       to: partnerEmail,
-      subject: "Please verify to receive grievances",
-      html: `<p>Your partner wants to share grievances with you. Click <a href="${verificationLink}">here</a> to accept.</p>`,
+      subject: "Please verify to receive messages from your partner",
+      html: `<p>Your partner wants to share messages with you. Click <a href="${verificationLink}">here</a> to accept.</p>`,
     });
 
     res.status(200).json({ message: "Verification email sent." });
