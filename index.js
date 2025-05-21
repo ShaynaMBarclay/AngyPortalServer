@@ -43,9 +43,9 @@ async function isEmailVerified(email) {
 }
 
 async function markEmailAsVerified(email) {
-  await db.collection("verifiedPartners").doc(email).set({ verified: true });
+  const lowerEmail = email.toLowerCase();
+  await db.collection("verifiedPartners").doc(lowerEmail).set({ verified: true });
   verifiedEmails.add(lowerEmail);
-  verifiedEmails.add(email); 
 }
 
 // ===== Middleware: Verify Firebase ID Token =====
